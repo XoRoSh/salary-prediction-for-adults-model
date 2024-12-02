@@ -139,10 +139,9 @@ def test_nb_fun():
     print("passed.") 
 
 if __name__ == '__main__':
-    # if test_multiply: test_multiply_fun()
+    if test_multiply: test_multiply_fun()
     # if test_sum: test_sum_fun()
     # if test_restrict: test_restrict_fun()
-    if test_normalize: test_normalize_fun()
+    # if test_normalize: test_normalize_fun()
     # if test_ve: test_ve_fun()
     # if test_nb: test_nb_fun()
-

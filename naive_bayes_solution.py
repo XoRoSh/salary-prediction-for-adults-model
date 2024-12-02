@@ -13,24 +13,18 @@ def normalize(factor):
     :return: a new Factor object resulting from normalizing factor.
     '''
     var_domains = [variable.domain() for variable in factor.get_scope()]
-    products = product(*var_domains)
+    products = list(product(*var_domains))
     new_factor = Factor(factor.name + ", normalized", factor.get_scope())
 
     sum = 0
     for product1 in products: 
-        print(product1) 
         value = factor.get_value(list(product1))
         sum += value
-    print("sum = ", sum)
 
     for product1 in products: 
-        print("HUI")
-        print(product1)
         value = factor.get_value(list(product1))
-        print("value = ", value)
         new_value = value/sum
         new_factor.add_values([list(product1) + [new_value]])
-
     return new_factor 
 
 
@@ -50,12 +44,12 @@ def restrict(factor, variable, value):
     new_scope = scope.copy()
     new_scope.pop(index)
     
-    domains = [variable.domain() for variable in new_scope]  #[[1, 2, 3], ['a', 'b'], ['heavy', 'light']] 
-    domain_products = product(*domains)
+    var_domains = [variable.domain() for variable in new_scope]  #[[1, 2, 3], ['a', 'b'], ['heavy', 'light']] 
+    products = list(product(*var_domains))
 
     # var Weight, val = heavy
     all_values = []
-    for product1 in domain_products:
+    for product1 in products: #[1, 'a'], [2, 'a'], [3, 'a']
         variable_values = list(product1) #[1, 'a']
         variable_values.insert(index, value) #[1, 'a', 'heavy']
         factor_value = factor.get_value(variable_values) #P(1, 'a', 'heavy')
@@ -83,7 +77,33 @@ def sum_out(factor, variable):
     :return: a new Factor object resulting from summing out variable from the factor.
              This new factor no longer has variable in it.
     '''
-    raise NotImplementedError
+    scope = factor.get_scope()
+    index = scope.index(variable)
+    new_scope = scope.copy()
+    new_scope.pop(index)
+
+    var_domain = variable.domain()
+
+    var_domains = [variable.domain() for variable in new_scope] 
+    products = list(product(*var_domains))
+
+    new_factor = Factor(factor.name + ", sumout " + variable.name, new_scope)
+
+    values = []
+    for product1 in products:
+        assignment = list(product1)
+        sum = 0
+        for i in var_domain: 
+            assignment.insert(index, i)
+            sum += factor.get_value(assignment) 
+            assignment.pop(index)
+        values.append(list(product1) + [sum])
+    new_factor.add_values(values)
+
+    new_factor.add_values(values)
+
+    return new_factor 
+
 
 def multiply(factor_list):
     '''
@@ -93,6 +113,19 @@ def multiply(factor_list):
     :param factor_list: a list of Factor objects.
     :return: a new Factor object resulting from multiplying all the factors in factor_list.
     '''
+    #[[1, 2], ['a', 'b'], ['heavy', 'light']] 
+    #[['heavy'] ['light'], ['cyka'] ['blyat']]
+    # [1, 'a', 'heavy', "cyka"] [1, 'a', 'heavy', "blyat"]
+    # [1, 'a', 'light', "cyka"] [1, 'a', 'light', "blyat"]
+    # [1, 'b', 'heavy', "cyka"] [1, 'b', 'heavy', "blyat"]
+    # [1, 'b', 'light', "cyka"] [1, 'b', 'light', "blyat"]
+    # [2, 'a', 'heavy', "cyka"] [2, 'a', 'heavy', "blyat"]
+    # [2, 'a', 'light', "cyka"] [2, 'a', 'light', "blyat"]
+    # [2, 'b', 'heavy', "cyka"] [2, 'b', 'heavy', "blyat"]
+    # [2, 'b', 'light', "cyka"] [2, 'b', 'light', "blyat"]
+ 
+    
+
 
     raise NotImplementedError
 
