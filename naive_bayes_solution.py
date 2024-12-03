@@ -3,6 +3,7 @@ from itertools import product
 import csv
 
 persons = []
+multiply_verbose = True 
 
 def normalize(factor):
     '''
@@ -104,6 +105,75 @@ def sum_out(factor, variable):
 
     return new_factor 
 
+def multiply_2_factors(factor1, factor2):
+    if multiply_verbose:
+        print("")
+        print("Scopes and Variables")
+        print("factor1", factor1.get_scope())
+        for i in factor1.get_scope():
+            print("     ", i.name, i.domain())
+        print("factor2", factor2.get_scope())
+        for i in factor2.get_scope():
+            print("     ", i.name,i.domain())
+
+    new_scope = factor1.get_scope()
+    for var in factor2.get_scope():
+        if var not in new_scope:
+            new_scope.append(var)
+
+    new_scope.sort(key=lambda var: var.name)
+    if multiply_verbose:
+        print("Multiplied Factor",  new_scope)
+        for i in new_scope:
+            print("     ", i.name, i.domain())
+        print("new scope", new_scope)
+        
+
+
+
+    new_factor = Factor(" " + factor1.name + " * " + factor2.name + " ", new_scope)
+    
+    
+    product1 = list(product(*[var.domain() for var in factor1.get_scope()]))
+    product2 = list(product(*[var.domain() for var in factor2.get_scope()]))
+
+    if multiply_verbose:
+        print("\n" * 1)
+        print("Assignments: ")
+    all_values = []
+    for assignment1 in product1:
+        value1 = factor1.get_value(list(assignment1))
+        for assignment2 in product2:
+            # Multiply 2 assignments 
+            value2 = factor2.get_value(list(assignment2))
+            value_res = value1 * value2
+
+            # Remove dublicated variables
+            new_assignment = list(assignment1)
+            for i in range(len(assignment2)):
+                if factor2.get_scope()[i] not in factor1.get_scope():
+                    new_assignment.append(assignment2[i])
+            new_assignment.sort(key=lambda x: str(x).replace('-', ''))
+            if multiply_verbose:
+                print("new assignment ", new_assignment, value_res)
+            new_factor.add_values([new_assignment + [value_res]])
+            all_values.append(new_assignment + [value_res])
+
+
+
+
+
+    if multiply_verbose:
+        print("\n" * 1)
+        print("New Factor")
+        new_factor.print_table()
+        print("\n" * 1)
+    return new_factor   
+
+    # for var in factor1.get_scope():
+
+    #     if var not in factor2.get_scope():
+    #         factor2 = restrict(factor2, var, factor1.get_scope_value(var))
 
 def multiply(factor_list):
     '''
@@ -114,55 +184,30 @@ def multiply(factor_list):
     :return: a new Factor object resulting from multiplying all the factors in factor_list.
     '''
     #[[1, 2], ['a', 'b'], ['heavy', 'light']] 
-    #[['heavy'] ['light'], ['cyka'] ['blyat']]
-    # [1, 'a', 'heavy', "cyka"] [1, 'a', 'heavy', "blyat"]
-    # [1, 'a', 'light', "cyka"] [1, 'a', 'light', "blyat"]
-    # [1, 'b', 'heavy', "cyka"] [1, 'b', 'heavy', "blyat"]
-    # [1, 'b', 'light', "cyka"] [1, 'b', 'light', "blyat"]
-    # [2, 'a', 'heavy', "cyka"] [2, 'a', 'heavy', "blyat"]
-    # [2, 'a', 'light', "cyka"] [2, 'a', 'light', "blyat"]
-    # [2, 'b', 'heavy', "cyka"] [2, 'b', 'heavy', "blyat"]
-    # [2, 'b', 'light', "cyka"] [2, 'b', 'light', "blyat"]
+    #[['heavy'] ['light'], ['this'] ['that']]
+    # [1, 'a', 'heavy', "this"] [1, 'a', 'heavy', "that"]
+    # [1, 'a', 'light', "this"] [1, 'a', 'light', "that"]
+    # [1, 'b', 'heavy', "this"] [1, 'b', 'heavy', "that"]
+    # [1, 'b', 'light', "this"] [1, 'b', 'light', "that"]
+    # [2, 'a', 'heavy', "this"] [2, 'a', 'heavy', "that"]
+    # [2, 'a', 'light', "this"] [2, 'a', 'light', "that"]
+    # [2, 'b', 'heavy', "this"] [2, 'b', 'heavy', "that"]
+    # [2, 'b', 'light', "this"] [2, 'b', 'light', "that"]
 
-    new_scope_vars = set()
-    for factor in factor_list:
-        new_scope_vars.update(factor.get_scope())
-    new_scope = list(new_scope_vars)
-
-
-    new_factor_name = "product of" + " ".join([f.name for f in factor_list])
-    product_factor = Factor(new_factor_name, new_scope)
-
-    # Calculate the size of the new factor's value table
-    new_factor_size = 1
-    for v in new_scope:
-        new_factor_size *= v.domain_size()
-
-    # Initialize the value table for the new factor
-    product_factor.values = [1] * new_factor_size
-
-    # Step 3: Calculate the values for the new factor
-    for idx in range(new_factor_size):
-        # Determine the assignment for this index
-        assignment = [None] * len(new_scope)
-        temp = idx
-        for i, v in enumerate(reversed(new_scope)):
-            assignment[len(new_scope) - 1 - i] = v.dom[temp % v.domain_size()]
-            temp //= v.domain_size()
-
-        # Multiply corresponding values from the input factors
-        for factor in factor_list:
-            # Generate index for the current factor
-            current_index = 0
-            multiplier = 1
-            for var in factor.get_scope():
-                value_index = var.dom.index(assignment[new_scope.index(var)])
-                current_index += multiplier * value_index
-                multiplier *= var.domain_size()
-
-            # Multiply the value
-            product_factor.values[idx] *= factor.values[current_index]
-    return product_factor
+    if len(factor_list) == 0: 
+        pritn("Factor list is empty")
+        return None
+    elif len(factor_list) == 1:
+        return factor_list[0]
+    else:
+        while len(factor_list) > 1:
+            factor1 = factor_list.pop(0)
+            factor2 = factor_list.pop(0)
+            new_factor = multiply_2_factors(factor1, factor2)
+            factor_list.append(new_factor)
+        return new_factor
+    print("should not reach here")
+    return None
 
 def ve(bayes_net, var_query, EvidenceVars):
     '''
@@ -238,9 +283,6 @@ def naive_bayes_model(data_file, variable_domains = {"Work": ['Not Working', 'Go
     # Count occurrences for each header
     header_counts = {header: {} for header in headers}
     print(header_counts)
-
-
-
     person = {header: {} for header in headers}
 
     # Count occurences  

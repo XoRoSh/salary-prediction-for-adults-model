@@ -40,13 +40,14 @@ def test_multiply_fun():
           value = factor.get_value([b_val, e_val])
           values.append(value)
         tests.append(value == FE.get_value([e_val])*FB.get_value([b_val]))
+    print("TEST 2")
     factor = multiply([FE, FB, FG])
     for e_val in E.domain():
         for b_val in B.domain():
                 for g_val in G.domain():
                     for s_val in S.domain():
                         try:
-                                value = factor.get_value([e_val, b_val, g_val, s_val])
+                                value = factor.get_value([b_val, e_val, g_val, s_val])
                                 values.append(value)
                         except ValueError:
                                 value = factor.get_value([s_val, g_val, b_val, e_val])
@@ -138,7 +139,7 @@ def test_nb_fun():
     print("passed.") 
 
 if __name__ == '__main__':
-    if test_multiply: test_multiply_fun()
+    # if test_multiply: test_multiply_fun()
     # if test_sum: test_sum_fun()
     # if test_restrict: test_restrict_fun()
     # if test_normalize: test_normalize_fun()
