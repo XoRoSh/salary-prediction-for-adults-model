@@ -3,7 +3,8 @@ from itertools import product
 import csv
 
 persons = []
-multiply_verbose = True 
+multiply_verbose = False 
+ve_verbose = False 
 
 def normalize(factor):
     '''
@@ -131,7 +132,6 @@ def multiply_2_factors(factor1, factor2):
     
     product1 = list(product(*[var.domain() for var in factor1.get_scope()]))
     product2 = list(product(*[var.domain() for var in factor2.get_scope()]))
-
     if multiply_verbose:
         print("\n" * 1)
         print("Assignments: ")
@@ -225,8 +225,26 @@ def multiply(factor_list):
             new_factor = multiply_2_factors(factor1, factor2)
             factor_list.append(new_factor)
         return new_factor
-    print("should not reach here")
-    return None
+
+def get_hidden_vars(Factors, QueryVar):
+    """Factors is a list of factor objects, QueryVar is a query variable.
+    Variables in the list will be derived from the scopes of the factors in Factors.
+    The QueryVar must NOT be part of the returned non_query_variables list.
+    @return a list of variables"""
+
+    scopes = []  # A list of list of variables across all the scopes in the factor of Factors
+    non_query_variables = []  # A list of non-duplicated variables excluding QueryVar
+
+    for factor in Factors:
+        scopes.append(list(factor.get_scope()))
+
+    # Get the list of non-query variables
+    for scope in scopes:
+        for var in scope:
+            if not var in non_query_variables and var != QueryVar:
+                non_query_variables.append(var)
+    return non_query_variables
+
 
 def ve(bayes_net, var_query, EvidenceVars):
     '''
@@ -258,7 +276,88 @@ def ve(bayes_net, var_query, EvidenceVars):
         Pr(A='a'|B=1, C='c') = 0.26.
 
     '''
-    raise NotImplementedError
+    
+    QueryVar = var_query
+    Factors = bayes_net.factors().copy()
+    for i in range(len(Factors)):
+        for evidence_var in EvidenceVars:
+            scope = Factors[i].get_scope()
+            if evidence_var in scope:  
+                # if ve_verbose:
+                #     print("Restricting Factor", Factors[i].name, "to", evidence_var.name, evidence_var.get_evidence())
+                evidence_value = evidence_var.get_evidence() 
+                Factors[i] = restrict(Factors[i], evidence_var, evidence_value)
+                if ve_verbose:
+                    Factors[i].print_table()
+
+    # Remove empty factors
+    for i in Factors:
+        if len(i.scope) == 0:
+            Factors.remove(i)
+
+
+    if ve_verbose:
+        print("\n" * 2)
+        print("     Restricted Factors To:", ", ".join([f"{var.name}={var.get_evidence()}" for var in EvidenceVars]))
+        for i in Factors:
+            print(i.name)
+            i.print_table()
+
+
+    hidden_vars = get_hidden_vars(Factors, QueryVar)
+    if ve_verbose: 
+        print(" ")
+        print("     Hidden Vars", hidden_vars)
+
+
+
+    for var in hidden_vars:
+        if ve_verbose:
+            print(" ")
+            print("ELIMINATING VAR", var.name)
+        factors_to_be_removed = []
+        copy_factors = Factors.copy()
+
+        for i in range(len(Factors)):
+            current_factor = copy_factors[i]
+            if var in current_factor.get_scope():
+                if ve_verbose:
+                    print("Factor contains hidden var", current_factor.name)
+                factors_to_be_removed.append(current_factor)
+                Factors.remove(current_factor)  # update the list of Factors
+
+        multiplied_factor = multiply(factors_to_be_removed)  
+        if ve_verbose:
+            print("             MULITIPLIED FACTOR", multiplied_factor.name)
+            multiplied_factor.print_table()
+        new_factor = sum_out(multiplied_factor, var) 
+        if ve_verbose:
+            print("             SUMMED OUT", new_factor.name)
+            new_factor.print_table()
+        Factors.append(new_factor)  
+        if ve_verbose:
+            print("\n")
+            print("AFTER ELIMINATION: ")
+            for i in Factors:
+                print(i.name)
+                i.print_table()
+
+    # remove factors that contains no variables since factors with no variables must be independent from the goal factor
+    related_Factors = []
+    for factor in Factors:
+        if (len(factor.scope) != 0) or (len(factor.scope) == 0 and factor.values[0] != 0):
+            related_Factors.append(factor)
+
+    final_factor = multiply(related_Factors)
+    normalized_factor = normalize(final_factor)
+
+    if ve_verbose:
+        print("Final Factor")
+        final_factor.print_table()
+        print("Normalized Factor")
+        normalized_factor.print_table()
+
+    return normalized_factor
 
 
 def naive_bayes_model(data_file, variable_domains = {"Work": ['Not Working', 'Government', 'Private', 'Self-emp'], "Education": ['<Gr12', 'HS-Graduate', 'Associate', 'Professional', 'Bachelors', 'Masters', 'Doctorate'], "Occupation": ['Admin', 'Military', 'Manual Labour', 'Office Labour', 'Service', 'Professional'], "MaritalStatus": ['Not-Married', 'Married', 'Separated', 'Widowed'], "Relationship": ['Wife', 'Own-child', 'Husband', 'Not-in-family', 'Other-relative', 'Unmarried'], "Race": ['White', 'Black', 'Asian-Pac-Islander', 'Amer-Indian-Eskimo', 'Other'], "Gender": ['Male', 'Female'], "Country": ['North-America', 'South-America', 'Europe', 'Asia', 'Middle-East', 'Carribean'], "Salary": ['<50K', '>=50K']}, class_var = Variable("Salary", ['<50K', '>=50K'])):

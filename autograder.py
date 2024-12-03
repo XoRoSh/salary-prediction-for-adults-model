@@ -23,7 +23,29 @@ FG.add_values([['g', 's', 0.5], ['g', '-s', 0], ['-g', 's', 0.5], ['-g', '-s', 1
 FW.add_values([['w', 's', 0.8], ['w', '-s', .2], ['-w', 's', 0.2], ['-w', '-s', 0.8]])
 
 
+
 SampleBN = BN('SampleBN', [E,B,S,G,W], [FE,FB,FS,FG,FW])
+
+def test_multiply_custom1(): 
+  F1 = Factor('P(E)', [E])
+  F1.add_values([['e', 1], ['-e', 10]])
+  F2 = Factor('P(S|E,B)', [B, E, S])
+  F2.add_values([['b', 'e', 's', 1], ['b', 'e', '-s', 2], ['b', '-e', 's', 3], ['b', '-e', '-s', 4],
+                  ['-b', 'e', 's', 5], ['-b', 'e', '-s', 6], ['-b', '-e', 's', 7], ['-b', '-e', '-s', 8]])
+  factor = multiply([F1, F2])
+  factor.print_table()
+  print(factor.name)
+  
+def test_multiply_custom2(): 
+  F1 = Factor('P(B)', [B])
+  F1.add_values([['b', 0.1], ['-b', 0.9]])
+  F2 = Factor('P(S|E,B)', [B, E, S])
+  F2.add_values([['b', 'e', 's', 0.9], ['b', 'e', '-s', 0.2], ['b', '-e', 's', 0.8], ['b', '-e', '-s', 0],
+                  ['-b', 'e', 's', 0.1], ['-b', 'e', '-s', 0.8], ['-b', '-e', 's', 0.2], ['-b', '-e', '-s', 1]])
+  factor = multiply([F1, F2])
+  factor.print_table()
+  print(factor.name)
+  
 
 
 def test_multiply_fun():
@@ -139,10 +161,29 @@ def test_nb_fun():
     print("passed.") 
 
 if __name__ == '__main__':
-    # if test_multiply: test_multiply_fun()
-    # if test_sum: test_sum_fun()
-    # if test_restrict: test_restrict_fun()
-    # if test_normalize: test_normalize_fun()
-    # if test_ve: test_ve_fun()
+    if test_multiply: test_multiply_fun()
+    if test_sum: test_sum_fun()
+    if test_restrict: test_restrict_fun()
+    if test_normalize: test_normalize_fun()
+    # test_multiply_custom1()
+    # test_multiply_custom2()
+    if test_ve: test_ve_fun()
     # if test_nb: test_nb_fun()
 
+# [B = b,E = e,S = s,] = 0.09000000000000001
+# [B = b,E = e,S = -s,] = 0.020000000000000004
+# [B = b,E = -e,S = s,] = 0.08000000000000002
+# [B = b,E = -e,S = -s,] = 0.0
+# [B = -b,E = e,S = s,] = 0.09000000000000001
+# [B = -b,E = e,S = -s,] = 0.7200000000000001
+# [B = -b,E = -e,S = s,] = 0.18000000000000002
+# [B = -b,E = -e,S = -s,] = 0.9
+
+# [B = b,E = e,S = s,] = 0.09000000000000001
+# [B = b,E = e,S = -s,] = 0.020000000000000004
+# [B = b,E = -e,S = s,] = 0.7200000000000001
+# [B = b,E = -e,S = -s,] = 0.0
+# [B = -b,E = e,S = s,] = 0.010000000000000002
+# [B = -b,E = e,S = -s,] = 0.08000000000000002
+# [B = -b,E = -e,S = s,] = 0.18000000000000002
+# [B = -b,E = -e,S = -s,] = 0.9
