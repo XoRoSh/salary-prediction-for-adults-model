@@ -15,7 +15,6 @@ E, B, S, G, W = Variable('E', ['e', '-e']), Variable('B', ['b', '-b']), Variable
 FE, FB, FS, FG, FW = Factor('P(E)', [E]), Factor('P(B)', [B]), Factor('P(S|E,B)', [S, E, B]), Factor('P(G|S)', [G,S]), Factor('P(W|S)', [W,S])
 
 
-
 FE.add_values([['e',0.1], ['-e', 0.9]])
 FB.add_values([['b', 0.1], ['-b', 0.9]])
 FS.add_values([['s', 'e', 'b', .9], ['s', 'e', '-b', .2], ['s', '-e', 'b', .8],['s', '-e', '-b', 0],
@@ -145,3 +144,4 @@ if __name__ == '__main__':
     # if test_normalize: test_normalize_fun()
     # if test_ve: test_ve_fun()
     # if test_nb: test_nb_fun()
+
