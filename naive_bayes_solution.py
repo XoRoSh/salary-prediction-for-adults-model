@@ -127,12 +127,7 @@ def multiply_2_factors(factor1, factor2):
         for i in new_scope:
             print("     ", i.name, i.domain())
         print("new scope", new_scope)
-        
 
-
-
-    new_factor = Factor(" " + factor1.name + " * " + factor2.name + " ", new_scope)
-    
     
     product1 = list(product(*[var.domain() for var in factor1.get_scope()]))
     product2 = list(product(*[var.domain() for var in factor2.get_scope()]))
@@ -147,27 +142,51 @@ def multiply_2_factors(factor1, factor2):
             # Multiply 2 assignments 
             value2 = factor2.get_value(list(assignment2))
             value_res = value1 * value2
-
-            # Remove dublicated variables
-            new_assignment = list(assignment1)
-            for i in range(len(assignment2)):
-                if factor2.get_scope()[i] not in factor1.get_scope():
-                    new_assignment.append(assignment2[i])
-            new_assignment.sort(key=lambda x: str(x).replace('-', ''))
             if multiply_verbose:
-                print("new assignment ", new_assignment, value_res)
-            new_factor.add_values([new_assignment + [value_res]])
-            all_values.append(new_assignment + [value_res])
+                print(assignment1, assignment2, value_res)
+
+            # Sort assignment
+            new_assignment = list(assignment1) + list(assignment2)
+            new_assignment.sort(key=lambda x: str(x).replace('-', ''))
+
+            valid_assignment = True
+            to_remove = []
+            for i in range(len(new_assignment) - 1):
+                if new_assignment[i] in new_scope[i].domain(): 
+                    if new_assignment[i+1] in new_scope[i].domain():
+                        if multiply_verbose:
+                            print(new_assignment[i], new_assignment[i+1])
+                        first = new_assignment[i]
+                        second = new_assignment[i+1]
+                        to_remove.append(new_assignment[i])
+                        if first != second:
+                            if multiply_verbose:
+                                print("INVALID ASSIGNMENT")
+                            valid_assignment = False
+                            break
+                        else: 
+                            if multiply_verbose:
+                                print("VALID ASSIGNMENT")
+        
+            if valid_assignment:
+                for item in to_remove:
+                    new_assignment.remove(item)
+                all_values.append(new_assignment + [value_res])
 
 
 
+            
 
+
+    new_factor = Factor(" " + factor1.name + " * " + factor2.name + " ", new_scope)
+
+    new_factor.add_values(all_values)
 
     if multiply_verbose:
         print("\n" * 1)
-        print("New Factor")
         new_factor.print_table()
         print("\n" * 1)
+    
     return new_factor   
 
     # for var in factor1.get_scope():
