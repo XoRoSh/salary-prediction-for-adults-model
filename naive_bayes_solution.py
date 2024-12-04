@@ -214,7 +214,7 @@ def multiply(factor_list):
     # [2, 'b', 'light', "this"] [2, 'b', 'light', "that"]
 
     if len(factor_list) == 0: 
-        pritn("Factor list is empty")
+        print("Factor list is empty")
         return None
     elif len(factor_list) == 1:
         return factor_list[0]
@@ -253,6 +253,11 @@ def restrict_evidence_variables(factors, EvindenceVars):
                 if ve_verbose:
                     factors[i].print_table()
 
+def remove_empty_factors(factors):
+    for i in factors:
+        if len(i.scope) == 0:
+            factors.remove(i)
+
 def ve(bayes_net, var_query, EvidenceVars):
     '''
 
@@ -289,15 +294,7 @@ def ve(bayes_net, var_query, EvidenceVars):
     
     restrict_evidence_variables(factors, EvidenceVars)
 
-
-
-
-
-
-    # Remove empty factors
-    for i in factors:
-        if len(i.scope) == 0:
-            factors.remove(i)
+    remove_empty_factors(factors)
 
 
     if ve_verbose:
