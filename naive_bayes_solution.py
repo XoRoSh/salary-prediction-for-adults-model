@@ -227,13 +227,9 @@ def multiply(factor_list):
         return new_factor
 
 def get_hidden_vars(Factors, QueryVar):
-    """Factors is a list of factor objects, QueryVar is a query variable.
-    Variables in the list will be derived from the scopes of the factors in Factors.
-    The QueryVar must NOT be part of the returned non_query_variables list.
-    @return a list of variables"""
 
-    scopes = []  # A list of list of variables across all the scopes in the factor of Factors
-    non_query_variables = []  # A list of non-duplicated variables excluding QueryVar
+    scopes = []  
+    non_query_variables = []  
 
     for factor in Factors:
         scopes.append(list(factor.get_scope()))
@@ -245,6 +241,17 @@ def get_hidden_vars(Factors, QueryVar):
                 non_query_variables.append(var)
     return non_query_variables
 
+
+
+def restrict_evidence_variables(factors, EvindenceVars):
+    for i in range(len(factors)):
+        for evidence_var in EvindenceVars:
+            scope = factors[i].get_scope()
+            if evidence_var in scope:  
+                evidence_value = evidence_var.get_evidence() 
+                factors[i] = restrict(factors[i], evidence_var, evidence_value)
+                if ve_verbose:
+                    factors[i].print_table()
 
 def ve(bayes_net, var_query, EvidenceVars):
     '''
@@ -274,37 +281,34 @@ def ve(bayes_net, var_query, EvidenceVars):
         Pr(A='a'|B=1, C='c') = 0.5, 
         Pr(A='a'|B=1, C='c') = 0.24, and 
         Pr(A='a'|B=1, C='c') = 0.26.
-
     '''
     
-    QueryVar = var_query
-    Factors = bayes_net.factors().copy()
-    for i in range(len(Factors)):
-        for evidence_var in EvidenceVars:
-            scope = Factors[i].get_scope()
-            if evidence_var in scope:  
-                # if ve_verbose:
-                #     print("Restricting Factor", Factors[i].name, "to", evidence_var.name, evidence_var.get_evidence())
-                evidence_value = evidence_var.get_evidence() 
-                Factors[i] = restrict(Factors[i], evidence_var, evidence_value)
-                if ve_verbose:
-                    Factors[i].print_table()
+
+    factors = bayes_net.factors().copy()
+
+    
+    restrict_evidence_variables(factors, EvidenceVars)
+
+
+
+
+
 
     # Remove empty factors
-    for i in Factors:
+    for i in factors:
         if len(i.scope) == 0:
-            Factors.remove(i)
+            factors.remove(i)
 
 
     if ve_verbose:
         print("\n" * 2)
         print("     Restricted Factors To:", ", ".join([f"{var.name}={var.get_evidence()}" for var in EvidenceVars]))
-        for i in Factors:
+        for i in factors:
             print(i.name)
             i.print_table()
 
 
-    hidden_vars = get_hidden_vars(Factors, QueryVar)
+    hidden_vars = get_hidden_vars(factors, var_query)
     if ve_verbose: 
         print(" ")
         print("     Hidden Vars", hidden_vars)
@@ -316,15 +320,15 @@ def ve(bayes_net, var_query, EvidenceVars):
             print(" ")
             print("ELIMINATING VAR", var.name)
         factors_to_be_removed = []
-        copy_factors = Factors.copy()
+        copy_factors = factors.copy()
 
-        for i in range(len(Factors)):
+        for i in range(len(factors)):
             current_factor = copy_factors[i]
             if var in current_factor.get_scope():
                 if ve_verbose:
                     print("Factor contains hidden var", current_factor.name)
                 factors_to_be_removed.append(current_factor)
-                Factors.remove(current_factor)  # update the list of Factors
+                factors.remove(current_factor)  # update the list of Factors
 
         multiplied_factor = multiply(factors_to_be_removed)  
         if ve_verbose:
@@ -334,17 +338,17 @@ def ve(bayes_net, var_query, EvidenceVars):
         if ve_verbose:
             print("             SUMMED OUT", new_factor.name)
             new_factor.print_table()
-        Factors.append(new_factor)  
+        factors.append(new_factor)  
         if ve_verbose:
             print("\n")
             print("AFTER ELIMINATION: ")
-            for i in Factors:
+            for i in factors:
                 print(i.name)
                 i.print_table()
 
     # remove factors that contains no variables since factors with no variables must be independent from the goal factor
     related_Factors = []
-    for factor in Factors:
+    for factor in factors:
         if (len(factor.scope) != 0) or (len(factor.scope) == 0 and factor.values[0] != 0):
             related_Factors.append(factor)
 
@@ -473,8 +477,7 @@ def naive_bayes_model(data_file, variable_domains = {"Work": ['Not Working', 'Go
 
 
 
-
-    # work = Variable("Work", ['Not Working', 'Government', 'Private', 'Self-emp'])
+# work = Variable("Work", ['Not Working', 'Government', 'Private', 'Self-emp'])
     # F2 = Factor
     ### DOMAIN INFORMATION REFLECTS ORDER OF COLUMNS IN THE DATA SET
 #     raise NotImplementedError

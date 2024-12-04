@@ -161,29 +161,11 @@ def test_nb_fun():
     print("passed.") 
 
 if __name__ == '__main__':
-    # if test_multiply: test_multiply_fun()
-    # if test_sum: test_sum_fun()
-    # if test_restrict: test_restrict_fun()
-    # if test_normalize: test_normalize_fun()
-    # test_multiply_custom1()
-    # test_multiply_custom2()
-    # if test_ve: test_ve_fun()
-    # if test_nb: test_nb_fun()
-
-# [B = b,E = e,S = s,] = 0.09000000000000001
-# [B = b,E = e,S = -s,] = 0.020000000000000004
-# [B = b,E = -e,S = s,] = 0.08000000000000002
-# [B = b,E = -e,S = -s,] = 0.0
-# [B = -b,E = e,S = s,] = 0.09000000000000001
-# [B = -b,E = e,S = -s,] = 0.7200000000000001
-# [B = -b,E = -e,S = s,] = 0.18000000000000002
-# [B = -b,E = -e,S = -s,] = 0.9
-
-# [B = b,E = e,S = s,] = 0.09000000000000001
-# [B = b,E = e,S = -s,] = 0.020000000000000004
-# [B = b,E = -e,S = s,] = 0.7200000000000001
-# [B = b,E = -e,S = -s,] = 0.0
-# [B = -b,E = e,S = s,] = 0.010000000000000002
-# [B = -b,E = e,S = -s,] = 0.08000000000000002
-# [B = -b,E = -e,S = s,] = 0.18000000000000002
-# [B = -b,E = -e,S = -s,] = 0.9
+    if test_multiply: test_multiply_fun()
+    if test_sum: test_sum_fun()
+    if test_restrict: test_restrict_fun()
+    if test_normalize: test_normalize_fun()
+    test_multiply_custom1()
+    test_multiply_custom2()
+    if test_ve: test_ve_fun()
+    if test_nb: test_nb_fun()
