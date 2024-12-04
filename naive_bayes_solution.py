@@ -457,21 +457,14 @@ def naive_bayes_model(data_file, variable_domains = {"Work": ['Not Working', 'Go
 
 
 def get_assigned_vars(data, variables, index_dict, is_E2):
-    """Given a list of Variable objects, assign the corresponding values
-    based on the input data provided.
-    E1: [Work, Occupation, Education, and Relationship Status]
-    E2: [Work, Occupation, Education, Relationship Status, and Gender]"""
 
-    assigned_vars = []  # A list of Variable object in E1 or E2 with value assigned
+    assigned_vars = []  
     var_salary = None
-    # i = 0  # for testing
     for var in variables:
         if var.name in ["Work", "Occupation", "Education", "Relationship"]:
             var_index = index_dict[var.name]
             var.set_evidence(data[var_index])
-            # var.set_evidence(data[i])  # for testing
             assigned_vars.append(var)
-            # i += 1  # for testing
         if is_E2:
             if var.name == "Gender":
                 var_index = index_dict["Gender"]
@@ -508,67 +501,58 @@ def explore(bayes_net, question):
         attribute_to_index[attribute] = index
 
     variables = bayes_net.variables()
-    count_women_E1_greater_E2, count_men_E1_greater_E2 = 0, 0
-    count_women_predict, count_men_predict = 0, 0
-    count_women_actual, count_men_actual = 0, 0
-    count_women_total, count_men_total = 0, 0
-    result = 0
+    num_women_E1_above_E2, num_men_E1_greater_E2 = 0, 0
+    women_income_prediction_count, male_income_prediction_count = 0, 0
+    num_women_with_income_above50_k, count_men_with_income_above50k = 0, 0
+    total_women_count, total_men_count = 0, 0
+    income_percentage = 0
 
     for data in input_data:
         # E1 prediction
         assigned_vars, var_salary = get_assigned_vars(data, variables, attribute_to_index, is_E2=False)
-        prob_E1_factor = ve(bayes_net, var_salary, assigned_vars)
-        prob_E1 = prob_E1_factor.values
+        probabilityE1Factor = ve(bayes_net, var_salary, assigned_vars)
+        probabilityE1 = probabilityE1Factor.values
 
-        if prob_E1[1] > 0.5:  # P(Salary=">=$50K"|E1)
+        if probabilityE1[1] > 0.5:  # P(Salary=">=$50K"|E1)
             if data[attribute_to_index["Gender"]] == "Female":
-                count_women_predict += 1
+                women_income_prediction_count += 1
                 if data[attribute_to_index["Salary"]] == ">=50K":
-                    count_women_actual += 1
+                    num_women_with_income_above50_k += 1
             elif data[attribute_to_index["Gender"]] == "Male":
-                count_men_predict += 1
+                male_income_prediction_count += 1
                 if data[attribute_to_index["Salary"]] == ">=50K":
-                    count_men_actual += 1
+                    count_men_with_income_above50k += 1
 
         if question in [1, 2]:
-            # E2 prediction
             assigned_vars, var_salary = get_assigned_vars(data, variables, attribute_to_index, is_E2=True)
             prob_E2_factor = ve(bayes_net, var_salary, assigned_vars)
             prob_E2 = prob_E2_factor.values
 
-            if prob_E1[1] > prob_E2[1]:  # P(Salary=">=$50K"|E1) > P(Salary=">=$50K"|E2)
+            if probabilityE1[1] > prob_E2[1]:
                 if data[attribute_to_index["Gender"]] == "Female":
-                    count_women_E1_greater_E2 += 1
+                    num_women_E1_above_E2 += 1
                 elif data[attribute_to_index["Gender"]] == "Male":
-                    count_men_E1_greater_E2 += 1
+                    num_men_E1_greater_E2 += 1
 
         if data[attribute_to_index["Gender"]] == "Female":
-            count_women_total += 1
+            total_women_count += 1
         elif data[attribute_to_index["Gender"]] == "Male":
-            count_men_total += 1
+            total_men_count += 1
 
     if question == 1:
-        result = count_women_E1_greater_E2 / count_women_total
+        income_percentage = num_women_E1_above_E2 / total_women_count
     elif question == 2:
-        result = count_men_E1_greater_E2 / count_men_total
+        income_percentage = num_men_E1_greater_E2 / total_men_count
     elif question == 3:
-        result = count_women_actual / count_women_predict
+        income_percentage = num_women_with_income_above50_k / women_income_prediction_count
     elif question == 4:
-        result = count_men_actual / count_men_predict
+        income_percentage = count_men_with_income_above50k / male_income_prediction_count
     elif question == 5:
-        result = count_women_predict / count_women_total
+        income_percentage = women_income_prediction_count / total_women_count
     elif question == 6:
-        result = count_men_predict / count_men_total
+        income_percentage = male_income_prediction_count / total_men_count
 
-    # with open('Explore_result.txt', 'w') as file:
-    #     file.write(f'Q1 = {count_women_E1_greater_E2 / count_women_total * 100}, {test_Q1}\n'
-    #                f'Q2 = {count_men_E1_greater_E2 / count_men_total * 100}, {test_Q2}\n'
-    #                f'Q3 = {count_women_actual / count_women_predict * 100}, {test_Q3}\n'
-    #                f'Q4 = {count_men_actual / count_men_predict * 100}, {test_Q4}\n'
-    #                f'Q5 = {count_women_predict / count_women_total * 100}, {test_Q5}\n'
-    #                f'Q6 = {count_men_predict / count_men_total * 100}, {test_Q6}\n')
-
-    return result * 100
+    return income_percentage * 100
 
     
 
