@@ -226,20 +226,16 @@ def multiply(factor_list):
             factor_list.append(new_factor)
         return new_factor
 
-def get_hidden_vars(Factors, QueryVar):
 
-    scopes = []  
-    non_query_variables = []  
+def non_evidence_vars(factors, var_query):
+    hidden_vars = set()
 
-    for factor in Factors:
-        scopes.append(list(factor.get_scope()))
+    for factor in factors:
+        for var in factor.get_scope():
+            if var != var_query:
+                hidden_vars.add(var)
 
-    # Get the list of non-query variables
-    for scope in scopes:
-        for var in scope:
-            if not var in non_query_variables and var != QueryVar:
-                non_query_variables.append(var)
-    return non_query_variables
+    return list(hidden_vars)
 
 
 
@@ -305,7 +301,7 @@ def ve(bayes_net, var_query, EvidenceVars):
             i.print_table()
 
 
-    hidden_vars = get_hidden_vars(factors, var_query)
+    hidden_vars = non_evidence_vars(factors, var_query)
     if ve_verbose: 
         print(" ")
         print("     Hidden Vars", hidden_vars)
