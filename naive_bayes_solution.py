@@ -419,20 +419,14 @@ def naive_bayes_model(data_file, variable_domains = {"Work": ['Not Working', 'Go
         for row in reader:
             input_data.append(row)
 
-    # In a naive Bayes network, each attribute is conditionally independent of all other
-    # attributes given the class variable (Salary)
-
-    # 1) Define one variable for each attribute
-    # variables is a list of Variable objects excluding Salary
     variables, class_variable = create_variables(headers, variable_domains)
 
-    # 2) Define one factor for each variable
-    factors = []  # list of Factor objects excluding Salary
+    factors = []  
     for var in variables:
         factors.append(Factor('P(' + var.name + '|Salary)', [var, class_variable]))
     class_factor = Factor('P(Salary)', [class_variable])
 
-    # 3) Populate the conditional probability table in each factor by counting the frequency of values in the training set
+
     count_salary_less_than_50K = 0
     count_salary_more_than_50K = 0
     total = len(input_data)
@@ -441,40 +435,25 @@ def naive_bayes_model(data_file, variable_domains = {"Work": ['Not Working', 'Go
             count_salary_less_than_50K += 1
         elif data[-1] == '>=50K':
             count_salary_more_than_50K += 1
-    # Create the prior probability with Salary
+
     class_factor.add_values([['<50K', count_salary_less_than_50K / total],
                              ['>=50K', count_salary_more_than_50K / total]])
 
-    # Create a dictionary the matches the attributes to their corresponding index in the list in input_data
     attribute_to_index = {}
     for index, attribute in enumerate(headers):
         attribute_to_index[attribute] = index
 
-    # Compute conditional probability for each attribute given Salary
     for salary_value in ['<50K', '>=50K']:
-        for factor in factors:  # iterate through all the attributes (variables)
-            # Get the attribute name from the factor
+        for factor in factors: 
             full_name = factor.name
             attribute = full_name[full_name.index("(") + 1:full_name.index("|Salary)")].strip()
-            # Get the index of the attribute in the header list
             attribute_index = attribute_to_index[attribute]
-            # print(f"\n P({attribute} = value | Salary = {salary_value}):")
 
             for attribute_value in variable_domains[attribute]:  # iterate through all the domain values of the attribute
                 prob = compute_conditional_prob(attribute_index, attribute_value, salary_value, input_data)
                 factor.add_values([[attribute_value, salary_value, prob]])
-                # print(f"P({attribute} = {attribute_value} | Salary = {salary_value}): {prob:.4f}")
 
     return BN("Predict_Salary", variables + [class_variable], factors + [class_factor])
-
-
-
-
-
-# work = Variable("Work", ['Not Working', 'Government', 'Private', 'Self-emp'])
-    # F2 = Factor
-    ### DOMAIN INFORMATION REFLECTS ORDER OF COLUMNS IN THE DATA SET
-#     raise NotImplementedError
 
 
 def get_assigned_vars(data, variables, index_dict, is_E2):
@@ -523,76 +502,50 @@ def explore(bayes_net, question):
         for row in reader:
             input_data.append(row)
 
-    # Create a dictionary the matches the attributes to their corresponding index in the list in input_data
+    
     attribute_to_index = {}
     for index, attribute in enumerate(headers):
         attribute_to_index[attribute] = index
 
-    variables = bayes_net.variables()  # from the bayes net model (include Salary)
+    variables = bayes_net.variables()
     count_women_E1_greater_E2, count_men_E1_greater_E2 = 0, 0
     count_women_predict, count_men_predict = 0, 0
     count_women_actual, count_men_actual = 0, 0
     count_women_total, count_men_total = 0, 0
     result = 0
-    index = 0
 
-    # ---------------- For Testing: Get the E1 Distribution ---------------------
-    # test_Q1, test_Q2,test_Q3, test_Q4, test_Q5, test_Q6 = [], [], [], [], [], []  # for testing
+    for data in input_data:
+        # E1 prediction
+        assigned_vars, var_salary = get_assigned_vars(data, variables, attribute_to_index, is_E2=False)
+        prob_E1_factor = ve(bayes_net, var_salary, assigned_vars)
+        prob_E1 = prob_E1_factor.values
 
-    # with open('E1_output.txt', 'w') as file:
-    #     domain_values = []
-    #     for var in variable_domains.keys():
-    #         if var in ["Work", "Occupation", "Education", "Relationship"]:
-    #             domain_values.append(variable_domains[var])
-    #     permutations = list(itertools.product(*domain_values))
-    #     for data in permutations:
-    #         assigned_vars, var_salary = get_assigned_vars(data, variables, attribute_to_index, is_E2=False)
-    #         prob_E1 = VE(Net, var_salary, assigned_vars)
-    #         assigned_values = [var.get_evidence() for var in assigned_vars]
-    #         file.write(f"{index}. {assigned_values}: {prob_E1[1]}\n")
-    # ---------------------------------------------------------------------------
+        if prob_E1[1] > 0.5:  # P(Salary=">=$50K"|E1)
+            if data[attribute_to_index["Gender"]] == "Female":
+                count_women_predict += 1
+                if data[attribute_to_index["Salary"]] == ">=50K":
+                    count_women_actual += 1
+            elif data[attribute_to_index["Gender"]] == "Male":
+                count_men_predict += 1
+                if data[attribute_to_index["Salary"]] == ">=50K":
+                    count_men_actual += 1
 
-    with open('E1_output.txt', 'w') as file:
-        file.write("E2 distribution\n")
-        for data in input_data:
-            # E1 prediction
-            assigned_vars, var_salary = get_assigned_vars(data, variables, attribute_to_index, is_E2=False)
-            prob_E1_factor =ve(bayes_net, var_salary, assigned_vars)
-            prob_E1 = prob_E1_factor.values
+        if question in [1, 2]:
+            # E2 prediction
+            assigned_vars, var_salary = get_assigned_vars(data, variables, attribute_to_index, is_E2=True)
+            prob_E2_factor = ve(bayes_net, var_salary, assigned_vars)
+            prob_E2 = prob_E2_factor.values
 
-            if prob_E1[1] > 0.5:  # P(Salary=">=$50K"|E1)
+            if prob_E1[1] > prob_E2[1]:  # P(Salary=">=$50K"|E1) > P(Salary=">=$50K"|E2)
                 if data[attribute_to_index["Gender"]] == "Female":
-                    count_women_predict += 1
-                    # test_Q5.append(index)  # for testing
-                    if data[attribute_to_index["Salary"]] == ">=50K":
-                        count_women_actual += 1
-                        # test_Q3.append(index)  # for testing
+                    count_women_E1_greater_E2 += 1
                 elif data[attribute_to_index["Gender"]] == "Male":
-                    count_men_predict += 1
-                    # test_Q6.append(index)  # for testing
-                    if data[attribute_to_index["Salary"]] == ">=50K":
-                        count_men_actual += 1
-                        # test_Q4.append(index)  # for testing
+                    count_men_E1_greater_E2 += 1
 
-            if question in [1, 2]:
-                # E2 prediction
-                assigned_vars, var_salary = get_assigned_vars(data, variables, attribute_to_index, is_E2=True)
-                prob_E2_Factor = ve(bayes_net, var_salary, assigned_vars)
-                prob_E2 = prob_E2_Factor.values
-
-                if prob_E1[1] > prob_E2[1]:  # P(Salary=">=$50K"|E1) > P(Salary=">=$50K"|E2)
-                    if data[attribute_to_index["Gender"]] == "Female":
-                        count_women_E1_greater_E2 += 1
-                        # test_Q1.append(index)  # for testing
-                    elif data[attribute_to_index["Gender"]] == "Male":
-                        count_men_E1_greater_E2 += 1
-                        # test_Q2.append(index)  # for testing
-
-            if data[-3] == "Female":
-                count_women_total += 1
-            elif data[-3] == "Male":
-                count_men_total += 1
-            index += 1
+        if data[attribute_to_index["Gender"]] == "Female":
+            count_women_total += 1
+        elif data[attribute_to_index["Gender"]] == "Male":
+            count_men_total += 1
 
     if question == 1:
         result = count_women_E1_greater_E2 / count_women_total
