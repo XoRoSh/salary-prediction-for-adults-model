@@ -413,7 +413,7 @@ def naive_bayes_model(data_file, variable_domains = {"Work": ['Not Working', 'Go
         "Salary": ['<50K', '>=50K']
     }
     input_data = []
-    with open('data/adult-train.csv', newline='') as csvfile:
+    with open(data_file, newline='') as csvfile:
         reader = csv.reader(csvfile)
         headers = next(reader, None)  # skip header row
         for row in reader:
@@ -421,14 +421,13 @@ def naive_bayes_model(data_file, variable_domains = {"Work": ['Not Working', 'Go
 
     variables, class_variable = create_variables(headers, variable_domains)
 
+    count_salary_less_than_50K = 0
+    count_salary_more_than_50K = 0
     factors = []  
     for var in variables:
         factors.append(Factor('P(' + var.name + '|Salary)', [var, class_variable]))
     class_factor = Factor('P(Salary)', [class_variable])
 
-
-    count_salary_less_than_50K = 0
-    count_salary_more_than_50K = 0
     total = len(input_data)
     for data in input_data:
         if data[-1] == '<50K':
@@ -525,10 +524,10 @@ def explore(bayes_net, question):
 
         if question in [1, 2]:
             assigned_vars, var_salary = get_assigned_vars(data, variables, attribute_to_index, is_E2=True)
-            prob_E2_factor = ve(bayes_net, var_salary, assigned_vars)
-            prob_E2 = prob_E2_factor.values
+            probabilityE2Factor = ve(bayes_net, var_salary, assigned_vars)
+            probabilityE2 = probabilityE2Factor.values
 
-            if probabilityE1[1] > prob_E2[1]:
+            if probabilityE1[1] > probabilityE2[1]:
                 if data[attribute_to_index["Gender"]] == "Female":
                     num_women_E1_above_E2 += 1
                 elif data[attribute_to_index["Gender"]] == "Male":
