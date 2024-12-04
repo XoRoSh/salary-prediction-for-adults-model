@@ -254,6 +254,45 @@ def remove_empty_factors(factors):
         if len(i.scope) == 0:
             factors.remove(i)
 
+def pick_factors_to_multiply(factors, hidden_vars):
+    for var in hidden_vars:
+        if ve_verbose:
+            print(" ")
+            print("ELIMINATING VAR", var.name)
+        factors_to_be_removed = []
+        copy_factors = factors.copy()
+
+        for i in range(len(factors)):
+            current_factor = copy_factors[i]
+            if var in current_factor.get_scope():
+                if ve_verbose:
+                    print("Factor contains hidden var", current_factor.name)
+                factors_to_be_removed.append(current_factor)
+                factors.remove(current_factor)  # update the list of Factors
+
+        multiplied_factor = multiply(factors_to_be_removed)  
+        if ve_verbose:
+            print("             MULITIPLIED FACTOR", multiplied_factor.name)
+            multiplied_factor.print_table()
+        new_factor = sum_out(multiplied_factor, var) 
+        if ve_verbose:
+            print("             SUMMED OUT", new_factor.name)
+            new_factor.print_table()
+        factors.append(new_factor)  
+        if ve_verbose:
+            print("\n")
+            print("AFTER ELIMINATION: ")
+            for i in factors:
+                print(i.name)
+                i.print_table()
+
+    related_factors = []
+    for factor in factors:
+        if (len(factor.scope) != 0) or (len(factor.scope) == 0 and factor.values[0] != 0):
+            related_factors.append(factor)
+
+    return related_factors
+
 def ve(bayes_net, var_query, EvidenceVars):
     '''
 
@@ -289,10 +328,7 @@ def ve(bayes_net, var_query, EvidenceVars):
 
     
     restrict_evidence_variables(factors, EvidenceVars)
-
     remove_empty_factors(factors)
-
-
     if ve_verbose:
         print("\n" * 2)
         print("     Restricted Factors To:", ", ".join([f"{var.name}={var.get_evidence()}" for var in EvidenceVars]))
@@ -308,44 +344,9 @@ def ve(bayes_net, var_query, EvidenceVars):
 
 
 
-    for var in hidden_vars:
-        if ve_verbose:
-            print(" ")
-            print("ELIMINATING VAR", var.name)
-        factors_to_be_removed = []
-        copy_factors = factors.copy()
+  
 
-        for i in range(len(factors)):
-            current_factor = copy_factors[i]
-            if var in current_factor.get_scope():
-                if ve_verbose:
-                    print("Factor contains hidden var", current_factor.name)
-                factors_to_be_removed.append(current_factor)
-                factors.remove(current_factor)  # update the list of Factors
-
-        multiplied_factor = multiply(factors_to_be_removed)  
-        if ve_verbose:
-            print("             MULITIPLIED FACTOR", multiplied_factor.name)
-            multiplied_factor.print_table()
-        new_factor = sum_out(multiplied_factor, var) 
-        if ve_verbose:
-            print("             SUMMED OUT", new_factor.name)
-            new_factor.print_table()
-        factors.append(new_factor)  
-        if ve_verbose:
-            print("\n")
-            print("AFTER ELIMINATION: ")
-            for i in factors:
-                print(i.name)
-                i.print_table()
-
-    # remove factors that contains no variables since factors with no variables must be independent from the goal factor
-    related_Factors = []
-    for factor in factors:
-        if (len(factor.scope) != 0) or (len(factor.scope) == 0 and factor.values[0] != 0):
-            related_Factors.append(factor)
-
-    final_factor = multiply(related_Factors)
+    final_factor = multiply(pick_factors_to_multiply(factors, hidden_vars))
     normalized_factor = normalize(final_factor)
 
     if ve_verbose:
